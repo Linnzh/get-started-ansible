@@ -1,0 +1,53 @@
+---
+
+# 在最开始收集系统信息
+- name: Gather facts
+  hosts: all
+  gather_facts: yes
+
+- name: Install prometheus
+  hosts: all
+  become: yes
+  tags:
+    - monitor
+  roles:
+    # link: https://prometheus-community.github.io/ansible/branch/main/prometheus_role.html
+    - name: prometheus.prometheus.prometheus
+      vars:
+        prometheus_web_listen_address: "0.0.0.0:9090"
+        prometheus_system_group: "monitor"
+        prometheus_system_user: "monitor"
+        prometheus_config_dir: "/etc/prometheus"
+
+- name: Install and configure node_exporter
+  hosts: all
+  become: yes
+  tags:
+    - exporter
+  roles:
+    # link: https://prometheus-community.github.io/ansible/branch/main/node_exporter_role.html
+    - name: prometheus.prometheus.node_exporter
+      vars:
+        node_exporter_web_listen_address: "0.0.0.0:9100"
+        node_exporter_system_group: "node-exp"
+        node_exporter_system_user: "node-exp"
+        node_exporter_version: "1.7.0"
+        node_exporter_web_telemetry_path: "/metrics"
+
+- name: Install and configure redis_exporter
+  hosts: all
+  become: yes
+  tags:
+    - exporter
+  roles:
+    # link: https://prometheus-community.github.io/ansible/branch/main/redis_exporter_role.html
+    - name: prometheus.prometheus.redis_exporter
+      vars:
+        redis_exporter_web_listen_address: "0.0.0.0:9121"
+        redis_exporter_addr: "redis://localhost:6379"
+        redis_exporter_log_format: "text"
+        redis_exporter_password: ""
+        redis_exporter_system_group: "monitor"
+        redis_exporter_system_user: "monitor"
+        redis_exporter_version: "1.58.0"
+        redis_exporter_web_telemetry_path: "/metrics"
