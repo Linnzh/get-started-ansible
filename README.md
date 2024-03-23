@@ -284,7 +284,7 @@ http {
 }
 ```
 
-## Prometheus
+## Example
 
 Reference
 
@@ -405,9 +405,7 @@ Run:
 $ ansible-playbook playbooks/prometheus.yml
 ```
 
-## Command Options
-
-### Playbook
+### Command Options
 
 #### 运行时指定主机
 
@@ -424,5 +422,57 @@ $ ansible-playbook playbooks/prometheus.yml -l test
 
 ```bash
 $ ansible-playbook playbooks/prometheus.yml --tags "exporter" -vvv
+```
+
+## Playbook
+
+### Docker
+
+```yaml
+# link: https://docs.docker.com/engine/install/debian/
+- name: Install Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Uninstall old versions
+      shell: |
+        for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove $pkg; done
+
+    - name: Install Docker dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg-agent
+        - software-properties-common
+
+    - name: Add Docker's official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable
+        state: present
+
+    - name: Install the Docker packages
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - docker-ce-cli
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
+
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
 ```
 
