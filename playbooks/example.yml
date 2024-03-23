@@ -1,0 +1,21 @@
+# 语法检查：ansible-playbook -C example.yml
+- name: create a file and append content at remote server
+  hosts: all
+  gather_facts: true
+  become: yes
+
+  # 定义任务（task）
+  tasks:
+    # Task #1 使用 file 模块创建一个空文件
+    - name: create a empty file at remote server
+      file:
+        state: touch
+        group: www-data
+        owner: www-data
+        path: ~/ansible-example-file.txt
+    # Task #2 使用 shell 模块对文件进行修改
+    - name: append lines of content
+      shell: |
+        echo 'Hello
+        Ansible
+        Come from Ansible' >> ~/ansible-example-shell.txt

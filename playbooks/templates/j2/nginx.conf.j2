@@ -1,0 +1,37 @@
+user www-data;
+
+worker_processes 2;
+worker_cpu_affinity auto;
+worker_rlimit_nofile 1024;
+
+
+daemon on;
+master_process on;
+
+lock_file logs/nginx.lock;
+pid log/nginx.pid;
+error_log log/nginx-error.log error;
+
+events {
+    use epoll;
+    worker_connections 1024;
+    worker_aio_requests 32;
+    multi_accept on;
+    accept_mutex off;
+    accept_mutex_delay 500ms;
+}
+
+http {
+    include /usr/local/nginx/conf/mime.types;
+    access_log logs/nginx-access.log;
+
+    server {
+        server_name {{ host }};
+        listen *:{{ port2 }};
+
+        location / {
+            root html
+            index index.html;
+        }
+    }
+}
