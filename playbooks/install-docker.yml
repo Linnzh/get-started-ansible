@@ -43,3 +43,13 @@
         name: docker
         state: started
         enabled: yes
+
+    - name: Get current user
+      command: whoami
+      register: current_user_result
+
+    - name: Add current user to Docker group
+      user:
+        name: "{{ current_user_result.stdout }}"
+        groups: docker
+        append: yes
