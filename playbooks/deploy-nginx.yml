@@ -1,0 +1,13 @@
+- name: Configuration nginx
+  hosts: all
+  gather_facts: true
+  become: yes
+  tags:
+    - web
+  tasks:
+    - name: Configuration prometheus
+      template:
+        src: j2/monitor.nginx.j2
+        dest: /etc/nginx/conf.d/monitor.conf
+      # test 主机组下的每个主机都执行该任务
+      with_items: "{{ groups['test'] }}"
