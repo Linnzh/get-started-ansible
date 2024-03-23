@@ -1,0 +1,51 @@
+- name: Install Node.js, npm, and Yarn from source
+  hosts: all
+  become: yes
+  vars:
+    node_version: "v20.11.1"
+  tasks:
+    - name: Install build tools and dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - gcc
+        - g++
+        - make
+        - curl
+
+    - name: Check if file exists
+      stat:
+        path: "/tmp/node-{{ node_version }}.tar.gz"
+      register: file_stat
+
+    - name: Download and extract Node.js source code
+      get_url:
+        # link: https://nodejs.org/dist/v20.11.1/node-v20.11.1.tar.gz
+        url: "https://nodejs.org/dist/{{ node_version }}/node-{{ node_version }}.tar.gz"
+        dest: "/tmp/node-{{ node_version }}.tar.gz"
+      when: not file_stat.stat.exists
+
+    - name: Check if file exists
+      stat:
+        path: "/opt/node-{{ node_version }}/"
+      register: file_stat
+
+    - name: Extract Node.js source code
+      unarchive:
+        src: "/tmp/node-{{ node_version }}.tar.gz"
+        dest: "/opt"
+        remote_src: yes
+      when: not file_stat.stat.exists
+
+    - name: Configure and compile Node.js from source
+      command: >
+        ./configure --prefix=/usr/local && make && make install
+      args:
+        chdir: "/opt/node-{{ node_version }}/"
+
+    - name: Install Yarn
+      command: >
+        npm install -g yarn
+      environment:
+        PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
