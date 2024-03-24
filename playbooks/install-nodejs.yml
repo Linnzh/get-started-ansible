@@ -4,16 +4,6 @@
   vars:
     node_version: "v20.11.1"
   tasks:
-    - name: Install build tools and dependencies
-      package:
-        name: "{{ item }}"
-        state: present
-      with_items:
-        - gcc
-        - g++
-        - make
-        - curl
-
     - name: Check if file exists
       stat:
         path: "/tmp/node-{{ node_version }}.tar.gz"
@@ -38,14 +28,47 @@
         remote_src: yes
       when: not file_stat.stat.exists
 
-    - name: Configure and compile Node.js from source
-      command: >
+    - name: Install build tools and dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - gcc
+        - g++
+        - make
+        - curl
+
+    - name: Configure and compile Node.js from source asynchronously
+      shell: >
         ./configure --prefix=/usr/local && make && make install
       args:
         chdir: "/opt/node-{{ node_version }}/"
+      async: 3600  # 设置任务的最大执行时间为 3600 秒（1 小时）
+      poll: 0  # 设置异步任务不等待，立即返回
+      register: nodejs_compile_result
+
+    - name: Wait for Node.js compilation to finish
+      async_status:
+        jid: "{{ nodejs_compile_result.ansible_job_id }}"
+      poll: 0
+      register: nodejs_compile_status
+      until: nodejs_compile_status.finished
+      retries: 120  # 设置重试次数，等待任务完成最多重试 120 次，每次等待约 5 秒
+
+    - name: Debug message
+      debug:
+        msg: "Node.js compilation finished with status: {{ nodejs_compile_status.status }}"
 
     - name: Install Yarn
       command: >
         npm install -g yarn
       environment:
         PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
+
+    - name: Remove useless packages from the cache
+      apt:
+        autoclean: yes
+
+    - name: Remove dependencies that are no longer required
+      apt:
+        autoremove: yes

@@ -290,6 +290,8 @@ Reference
 
 - [Galaxy - Prometheus](https://galaxy.ansible.com/ui/repo/published/prometheus/prometheus/)
 - [Node exporter role](https://prometheus-community.github.io/ansible/branch/main/node_exporter_role.html)
+- [Grafana](https://galaxy.ansible.com/ui/repo/published/grafana/grafana/)
+- [Ansible apt module Examples - install packages with apt](https://www.middlewareinventory.com/blog/ansible-apt-examples/)
 
 
 

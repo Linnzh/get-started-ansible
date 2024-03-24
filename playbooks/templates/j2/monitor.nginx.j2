@@ -1,10 +1,14 @@
 server {
-    server_name prometheus.{{ hostname }};
-    listen [::]:80;
+    server_name testing.{{ hostname }};
+    listen 80;
 
-    access_log /var/log/nginx/prometheus-access.log;
+    access_log /var/log/nginx/monitor-access.log;
+    charset UTF-8;
 
     location / {
+        # 3001: Grafana
+        # 9090: Prometheus
+        # 9100: Node Exporter
         proxy_pass http://127.0.0.1:9090;
 
         add_header 'Access-Control-Allow-Origin' '$http_origin';

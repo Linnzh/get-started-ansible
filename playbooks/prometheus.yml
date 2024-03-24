@@ -5,13 +5,15 @@
   hosts: all
   gather_facts: yes
 
+# link: https://prometheus-community.github.io/ansible/branch/main/prometheus_role.html
 - name: Install prometheus
   hosts: all
   become: yes
   tags:
     - monitor
   roles:
-    # link: https://prometheus-community.github.io/ansible/branch/main/prometheus_role.html
+    # --web.config.file=/etc/prometheus/web.yml --web.console.templates=/etc/prometheus/consoles
+    # --web.listen-address=0.0.0.0:9090 --web.external-url= --config.file=/etc/prometheus/prometheus.yml
     - name: prometheus.prometheus.prometheus
       vars:
         prometheus_web_listen_address: "0.0.0.0:9090"
@@ -19,28 +21,28 @@
         prometheus_system_user: "monitor"
         prometheus_config_dir: "/etc/prometheus"
 
+# link: https://prometheus-community.github.io/ansible/branch/main/node_exporter_role.html
 - name: Install and configure node_exporter
   hosts: all
   become: yes
   tags:
     - exporter
   roles:
-    # link: https://prometheus-community.github.io/ansible/branch/main/node_exporter_role.html
     - name: prometheus.prometheus.node_exporter
       vars:
         node_exporter_web_listen_address: "0.0.0.0:9100"
-        node_exporter_system_group: "node-exp"
-        node_exporter_system_user: "node-exp"
+        node_exporter_system_group: "monitor"
+        node_exporter_system_user: "monitor"
         node_exporter_version: "1.7.0"
         node_exporter_web_telemetry_path: "/metrics"
 
+# link: https://prometheus-community.github.io/ansible/branch/main/redis_exporter_role.html
 - name: Install and configure redis_exporter
   hosts: all
   become: yes
   tags:
     - exporter
   roles:
-    # link: https://prometheus-community.github.io/ansible/branch/main/redis_exporter_role.html
     - name: prometheus.prometheus.redis_exporter
       vars:
         redis_exporter_web_listen_address: "0.0.0.0:9121"
@@ -51,3 +53,69 @@
         redis_exporter_system_user: "monitor"
         redis_exporter_version: "1.58.0"
         redis_exporter_web_telemetry_path: "/metrics"
+
+# link: https://galaxy.ansible.com/ui/repo/published/grafana/grafana/content/role/grafana/
+# https://grafana.com/docs/grafana/latest/setup-grafana/installation/debian/
+# link: https://medium.com/devops4me/install-grafana-prometheus-node-exporter-using-ansible-1771e649a4b3
+- name: Install and configure Grafana
+  hosts: all
+  become: yes
+  tags:
+    - dashboard
+  # Error: https://github.com/grafana/grafana/issues/61524
+  roles:
+    - role: grafana.grafana.grafana
+      vars:
+        grafana_apt_release_channel: stable
+        grafana_apt_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+        grafana_apt_key: https://apt.grafana.com/gpg.key
+        grafana_apt_repo: "deb [arch={{ grafana_apt_arch }} signed-by=/usr/share/keyrings/grafana.gpg] https://apt.grafana.com/ {{ grafana_apt_release_channel }} main"
+        grafana_security:
+          admin_user: admin
+          admin_password: admin@2024
+        grafana_version: latest # 9.1.7, 10.4
+        grafana_address: 0.0.0.0
+        grafana_port: 3001
+        grafana_datasources:
+          - name: prometheus
+            type: prometheus
+            access: proxy
+            url: 'http://{{ prometheus_web_listen_address }}'
+            basicAuth: false
+          - name: redis-local
+            type: redis
+            address: "127.0.0.1:6379"
+        grafana_dashboards:
+          - Redis Streaming
+        grafana_plugins:
+          - grafana-simple-json-datasource
+          - grafana-clock-panel
+          - redis-datasource
+
+- name: Init Configuration
+  hosts: all
+  become: yes
+  serial: 1
+  strategy: free
+  tags:
+    - config
+  tasks:
+    - name: Configuration prometheus
+      template:
+        src: j2/prometheus.yml.j2
+        dest: /etc/prometheus/prometheus.yml
+
+    - name: Configuration monitor nginx
+      template:
+        src: j2/monitor.nginx.j2
+        dest: /etc/nginx/conf.d/monitor.conf
+
+    - name: Restart Nginx service
+      service:
+        name: nginx
+        state: restarted
+
+    - name: Restart Prometheus service
+      service:
+        name: prometheus
+        state: restarted
