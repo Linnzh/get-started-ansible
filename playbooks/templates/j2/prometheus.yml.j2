@@ -23,8 +23,9 @@ scrape_configs:
   #
   # System monitor
   # node_exporter: 请在需要监控的主机上安装并暴露对应的地址信息
-  # Dashboard 模板ID：16098
+  # Node Dashboard：16098
+  # Nginx Dashboard: 14900
   #
   - job_name: node_exporter
     static_configs:
-      - targets: ["127.0.0.1:9100", "127.0.0.1:9121"]
+      - targets: ["127.0.0.1:9100", "127.0.0.1:9121", "127.0.0.1:9113"]

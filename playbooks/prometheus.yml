@@ -54,6 +54,23 @@
         redis_exporter_version: "1.58.0"
         redis_exporter_web_telemetry_path: "/metrics"
 
+# link: https://grafana.com/grafana/dashboards/14900-nginx/
+# link: https://prometheus-community.github.io/ansible/branch/main/nginx_exporter_role.html
+- name: Install and configure nginx_exporter
+  hosts: all
+  become: yes
+  tags:
+    - nginx_exporter
+  roles:
+    - name: prometheus.prometheus.nginx_exporter
+      vars:
+        nginx_exporter_scrape_uri: "http://127.0.0.1/stub_status"
+        nginx_exporter_web_listen_address: "0.0.0.0:9113"
+        nginx_exporter_system_group: "monitor"
+        nginx_exporter_system_user: "monitor"
+        nginx_exporter_web_telemetry_path: "/metrics"
+
+
 # link: https://galaxy.ansible.com/ui/repo/published/grafana/grafana/content/role/grafana/
 # https://grafana.com/docs/grafana/latest/setup-grafana/installation/debian/
 # link: https://medium.com/devops4me/install-grafana-prometheus-node-exporter-using-ansible-1771e649a4b3
