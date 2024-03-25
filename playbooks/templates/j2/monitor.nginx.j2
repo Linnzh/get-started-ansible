@@ -1,9 +1,18 @@
+map $http_client_secret $is_valid {
+    default        0;
+    "{{ secret }}" 1;
+}
+
 server {
     server_name monitor.{{ hostname }};
     listen 80;
 
     access_log /var/log/nginx/monitor-access.log;
     charset UTF-8;
+
+    if ($is_valid = 0) {
+        return 403;
+    }
 
     location / {
         # 3001: Grafana

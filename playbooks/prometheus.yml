@@ -74,6 +74,7 @@
 # link: https://galaxy.ansible.com/ui/repo/published/grafana/grafana/content/role/grafana/
 # https://grafana.com/docs/grafana/latest/setup-grafana/installation/debian/
 # link: https://medium.com/devops4me/install-grafana-prometheus-node-exporter-using-ansible-1771e649a4b3
+# ansible-galaxy collection install grafana.grafana
 - name: Install and configure Grafana
   hosts: all
   become: yes
@@ -108,6 +109,10 @@
           - grafana-simple-json-datasource
           - grafana-clock-panel
           - redis-datasource
+          - rabbitmq-stream
+          - rabbitmq-prometheus
+
+# TODO Install Telegraf
 
 - name: Init Configuration
   hosts: all
