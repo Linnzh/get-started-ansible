@@ -19,3 +19,8 @@ all:
     ansible_ssh_pipelining: True
     ansible_python_interpreter: /usr/bin/python3
     hostname: linnzh.com
+    secret: 12345678910
+    detector:
+      - 127.0.0.1:9100 # node_exporter
+      - 127.0.0.1:9121 # redis_exporter
+      - 127.0.0.1:9113 # nginx_exporter
