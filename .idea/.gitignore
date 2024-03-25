@@ -11,3 +11,6 @@
 /modules.xml
 /magento2plugin.xml
 /ansible.iml
+sshConfigs.xml
+webServers.xml
+get-started-ansible.iml
