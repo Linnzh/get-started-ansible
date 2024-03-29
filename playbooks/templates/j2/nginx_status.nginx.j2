@@ -1,0 +1,20 @@
+server {
+    #server_name 127.0.0.1 localhost;
+    #listen 80;
+
+    listen 81 default_server;
+    listen [::]:81 default_server;
+
+    charset UTF-8;
+
+    location /nginx_status {
+        stub_status;
+        allow 127.0.0.1;
+        access_log off;
+        deny all;
+    }
+
+    location / {
+      try_files $uri $uri/ =404;
+    }
+}

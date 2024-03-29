@@ -1,0 +1,95 @@
+---
+
+# 在最开始收集系统信息
+# 在受控主机上安装监控程序
+- name: Gather facts
+  hosts: all
+  gather_facts: yes
+
+# link: https://prometheus-community.github.io/ansible/branch/main/node_exporter_role.html
+- name: Install and configure node_exporter
+  hosts: all
+  become: yes
+  tags:
+    - node_exporter
+  roles:
+    - name: prometheus.prometheus.node_exporter
+      vars:
+        node_exporter_web_listen_address: "0.0.0.0:9100"
+        node_exporter_system_group: "monitor"
+        node_exporter_system_user: "monitor"
+        node_exporter_version: "1.7.0"
+        node_exporter_web_telemetry_path: "/metrics"
+
+# Install Telegraf
+# link： https://github.com/influxdata/telegraf
+- name: Install Telegraf
+  hosts: all
+  become: yes
+  serial: 1
+  strategy: free
+  tags:
+    - telegraf
+  vars:
+    - telegraf_influxdata_base_url: https://repos.influxdata.com
+  tasks:
+    - name: Download GPG key
+      get_url:
+        url: "{{ telegraf_influxdata_base_url }}/influxdata-archive_compat.key"
+        dest: /tmp/influxdata.key
+    
+    - name: Import GPG key for InfluxData repository
+      shell: cat /tmp/influxdata.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/influxdata.gpg > /dev/null
+    
+    - name: Add InfluxData repository
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata.gpg] {{ telegraf_influxdata_base_url }}/debian stable main"
+        state: present
+        filename: "influxdata"
+        update_cache: yes
+    
+    - name: Install Telegraf packages [Debian/Ubuntu]
+      apt:
+        name: telegraf
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      register: apt_result
+      until: apt_result is success
+      retries: 2
+      delay: 5
+      when: telegraf_install_url is not defined or telegraf_install_url == None
+
+- name: Init Configuration
+  hosts: all
+  become: yes
+  serial: 1
+  strategy: free
+  tags:
+    - config
+  tasks:
+    - name: Configuration monitor nginx
+      template:
+        src: j2/nginx_status.nginx.j2
+        dest: /etc/nginx/conf.d/nginx_status.conf
+    
+    - name: Restart Nginx service
+      service:
+        name: nginx
+        state: restarted
+    
+    # ExecStart=/usr/bin/telegraf -config /etc/telegraf/telegraf.conf -config-directory /etc/telegraf/telegraf.d $TELEGRAF_OPTS
+    - name: Configuration telegraf
+      template:
+        src: j2/telegraf.conf.j2
+        dest: /etc/telegraf/telegraf.d/common.conf
+    # telegraf --config /etc/telegraf/telegraf.d/nginx.conf --test
+    - name: Configuration telegraf nginx
+      template:
+        src: j2/telegraf/nginx.conf.j2
+        dest: /etc/telegraf/telegraf.d/nginx.conf
+    
+    - name: Restart Telegraf service
+      service:
+        name: telegraf
+        state: restarted

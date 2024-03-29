@@ -1,0 +1,56 @@
+[global_tags]
+
+[agent]
+  interval = "10s"
+  debug = false
+  round_interval = true
+  metric_batch_size = 1000
+  metric_buffer_limit = 10000
+  collection_jitter = "0s"
+  flush_interval = "10s"
+  flush_jitter = "0s"
+  precision = "0s"
+  logfile = "/var/log/telegraf/telegraf.log"
+  logfile_rotation_interval = "24h"
+  logfile_rotation_max_size = "10MB"
+  logfile_rotation_max_archives = 100
+  log_with_timezone = "UTC"
+  hostname = "{{ host }}"
+  omit_hostname = false
+
+###############################################################################
+#                            OUTPUT PLUGINS                                   #
+###############################################################################
+
+# Configuration for the Prometheus client to spawn
+[[outputs.prometheus_client]]
+  listen = ":9273"
+  read_timeout = "10s"
+  write_timeout = "10s"
+
+  ## Valid options: 1, 2
+  metric_version = 2
+
+  ## Path to publish the metrics on.
+  path = "/metrics"
+  export_timestamp = true
+
+###############################################################################
+#                            INPUT PLUGINS                                    #
+###############################################################################
+
+[[inputs.cpu]]
+  percpu = true
+  totalcpu = true
+  collect_cpu_time = false
+  report_active = false
+  core_tags = false
+  
+[[inputs.disk]]
+  ignore_fs = ["tmpfs", "devtmpfs", "devfs", "iso9660", "overlay", "aufs", "squashfs"]
+[[inputs.diskio]]
+[[inputs.kernel]]
+[[inputs.mem]]
+[[inputs.processes]]
+[[inputs.swap]]
+[[inputs.system]]

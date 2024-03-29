@@ -1,0 +1,42 @@
+
+[[outputs.file]]
+  files = ["/var/log/telegraf/outputs.log"]
+  namepass = ["nginxlog"]
+  influx_sort_fields = true
+  influx_uint_support = true
+
+
+# link: https://github.com/influxdata/telegraf/tree/master/plugins/parsers/grok
+# nginx 请求日志读取时请开启 [agent] debug=true
+[[inputs.tail]]
+  name_override = "nginxlog"
+  files = [
+    {% for log_file in nginx_log %}
+    "{{ log_file }}"{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+  from_beginning = true
+  pipe = false
+  data_format = "grok"
+  grok_patterns = ["%{COMBINED_LOG_FORMAT}"]
+
+# Read Nginx's basic status information (ngx_http_stub_status_module)
+# 是否可以一个 Telegraf 采集多个服务器？而不是每个服务器都装？
+# NO, 因为 nginx 日志读取也需要在本地读，还是需要装
+[[inputs.nginx]]
+  urls = ["http://127.0.0.1/nginx_status"]
+  response_timeout = "5s"
+  insecure_skip_verify = true
+
+
+# [[processors.regex]]
+#   order = 1
+#   namepass = ["nginxlog"]
+# [[processors.regex.tags]]
+#   key = "resp_code"
+#   pattern = "^(\\d)\\d\\d$"
+#   replacement = "${1}xx"
+# [[processors.regex.fields]]
+#   key = "request"
+#   pattern = "^([^?]+)?.*"
+#   replacement = "${1}"

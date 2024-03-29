@@ -32,3 +32,10 @@ scrape_configs:
         {% for target in detector %}
         - "{{ target }}"
         {% endfor %}
+
+  - job_name: Telegraf
+    static_configs:
+      - targets:
+        {% for target in telegraf %}
+        - "{{ target }}"
+        {% endfor %}
