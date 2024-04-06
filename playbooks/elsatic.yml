@@ -1,0 +1,96 @@
+---
+
+- name: Install Elastic suit
+  hosts: all
+  gather_facts: yes
+
+# download: https://jdk.java.net/22/
+# install: https://openjdk.org/install/
+- name: Install Java
+  hosts: all
+  become: yes
+  vars:
+    # https://download.java.net/java/GA/jdk22/830ec9fcccef480bb3e73fb7ecafe059/36/GPL/openjdk-22_linux-x64_bin.tar.gz
+    # https://download.java.net/java/GA/jdk22/830ec9fcccef480bb3e73fb7ecafe059/36/GPL/openjdk-22_linux-aarch64_bin.tar.gz
+    - jdk_version: jdk-22
+    - jdk_archive: "open{{ jdk_version }}_linux-aarch64_bin.tar.gz"
+    #- jdk_archive: "open{{ jdk_version }}_linux-x64_bin.tar.gz"
+
+    # https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.19-linux-x86_64.tar.gz
+    # https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.19-linux-aarch64.tar.gz
+    - es_version: elasticsearch-7.17.19
+    - es_archive: "{{ es_version }}-linux-aarch64.tar.gz"
+    - es_user: elastic
+    - es_group: elastic
+  tags:
+    - prev
+  tasks:
+    - name: Download JDK
+      get_url:
+        url: "https://download.java.net/java/GA/jdk22/830ec9fcccef480bb3e73fb7ecafe059/36/GPL/{{ jdk_archive }}"
+        dest: "/tmp/{{ jdk_archive }}"
+
+    - name: Install JDK
+      unarchive:
+        src: "/tmp/{{ jdk_archive }}"
+        dest: "/opt"
+        remote_src: yes
+
+    - name: Update alternatives fro Java
+      command: "update-alternatives --install /usr/bin/java java /opt/{{ jdk_version }}/bin 300"
+    - name: Update alternatives fro Javac
+      command: "update-alternatives --install /usr/bin/javac javac /opt/{{ jdk_version }}/bin 300"
+
+    # download: https://www.elastic.co/guide/en/elasticsearch/reference/7.17/targz.html
+
+- name: Install Elasticsearch
+  hosts: all
+  become: yes
+  tasks:
+    - name: Download GPG key
+      get_url:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        dest: /tmp/gpg.key
+
+    - name: Import GPG key for Elastic repository
+      shell: cat /tmp/gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/elasticsearch-keyring.gpg > /dev/null
+
+    - name: Add Elastic repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/7.x/apt stable main"
+        state: present
+        filename: "elastic-7.x"
+        update_cache: yes
+
+    - name: Install dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+
+    - name: Install Elastic packages [Debian/Ubuntu]
+      apt:
+        name: elasticsearch
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      register: apt_result
+      until: apt_result is success
+      retries: 2
+
+    - name: Configuration
+      template:
+        src: j2/elastic/elastic.yml.j2
+        dest: /etc/elasticsearch/elasticsearch.yml
+
+    - name: Restart service
+      service:
+        name: elasticsearch
+        state: restarted
+        enabled: yes
+
+
+# TODO Kibana
+
+# TODO Filebeat

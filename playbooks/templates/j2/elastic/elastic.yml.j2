@@ -1,0 +1,27 @@
+cluster:
+  name: local-es
+  initial_master_nodes:
+    - node01
+
+node.name: node01
+
+path:
+  data: /var/lib/elasticsearch
+  logs: /var/log/elasticsearch
+
+bootstrap.memory_lock: false
+network.host: 0.0.0.0
+http.port: 9200
+
+action.auto_create_index:
+  - .monitoring*,.watches
+  - .triggered_watches
+  - .watcher-history*
+  - .ml*
+
+indices.breaker.total.limit: 70%
+indices.breaker.total.use_real_memory: false
+indices.breaker.request.limit: 40%
+indices.query.bool.max_clause_count: 2000
+search.max_buckets: 2500
+http.max_content_length: 400mb
