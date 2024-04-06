@@ -23,7 +23,24 @@ events {
 
 http {
     include /usr/local/nginx/conf/mime.types;
-    access_log logs/nginx-access.log;
+
+    ##
+    # Logging Settings
+    #
+    # $request_time 整体响应时间，单位为 秒
+    # $upstream_response_time 负载均衡处理响应时间，单位为 秒
+    # 请一定注意空格问题（只保留一个空格）
+    ##
+    log_format main '$remote_addr - $remote_user [$time_local] '
+        '"$request" $status $body_bytes_sent '
+        '"$http_referer" "$http_user_agent" '
+        '$request_time $upstream_response_time '
+        '$http_host $upstream_addr '
+        '"$http_x_forwarded_for" "$http_authorization" "$http_real_ip" '
+        '"$request_body"';
+
+    access_log /var/log/nginx/access.log main;
+    error_log /var/log/nginx/error.log;
 
     map $http_client_secret $is_valid {
         default        0;

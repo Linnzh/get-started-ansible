@@ -123,21 +123,57 @@
         state: restarted
         enabled: yes
 
-# 只需要在一个服务器配置 kibana
-- name: Configuration Nginx
+## 只需要在一个服务器配置 kibana
+#- name: Configuration Nginx
+#  hosts: all
+#  become: yes
+#  tags:
+#    - web
+#  tasks:
+#    - name: Configuration monitor nginx
+#      template:
+#        src: j2/elastic/web/kibana.conf.j2
+#        dest: /etc/nginx/conf.d/kibana.conf
+#
+#    - name: Restart Nginx service
+#      service:
+#        name: nginx
+#        state: restarted
+
+# link: https://www.elastic.co/guide/en/beats/filebeat/7.17/index.html
+- name: Install Filebeat
   hosts: all
   become: yes
   tags:
-    - web
+    - filebeat
   tasks:
-    - name: Configuration monitor nginx
+    - name: Install packages
+      apt:
+        name: filebeat
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      register: apt_result
+      until: apt_result is success
+      retries: 2
+
+    - name: Configuration
       template:
-        src: j2/elastic/web/kibana.conf.j2
-        dest: /etc/nginx/conf.d/kibana.conf
+        src: j2/elastic/filebeat.yml.j2
+        dest: /etc/filebeat/filebeat.yml
 
-    - name: Restart Nginx service
+    - name: Nginx
+      template:
+        src: j2/elastic/filebeat/nginx.yml.j2
+        dest: /etc/filebeat/modules.d/nginx.yml
+
+    - name: Nginx pipeline
+      template:
+        src: j2/elastic/filebeat/nginx_pipeline.yml.j2
+        dest: /usr/share/filebeat/module/nginx/access/ingest/pipeline.yml
+
+    - name: Restart service
       service:
-        name: nginx
+        name: filebeat
         state: restarted
-
-# TODO Filebeat
+        enabled: yes
