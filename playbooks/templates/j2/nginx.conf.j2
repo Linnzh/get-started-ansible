@@ -25,6 +25,11 @@ http {
     include /usr/local/nginx/conf/mime.types;
     access_log logs/nginx-access.log;
 
+    map $http_client_secret $is_valid {
+        default        0;
+        "{{ secret }}" 1;
+    }
+
     server {
         server_name {{ host }};
         listen *:{{ port2 }};

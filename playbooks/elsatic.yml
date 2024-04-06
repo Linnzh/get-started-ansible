@@ -46,6 +46,8 @@
 - name: Install Elasticsearch
   hosts: all
   become: yes
+  tags:
+    - es
   tasks:
     - name: Download GPG key
       get_url:
@@ -79,6 +81,7 @@
       until: apt_result is success
       retries: 2
 
+    # TODO JVM Options
     - name: Configuration
       template:
         src: j2/elastic/elastic.yml.j2
@@ -91,6 +94,50 @@
         enabled: yes
 
 
-# TODO Kibana
+# Kibana
+# download: https://www.elastic.co/guide/en/kibana/7.17/install.html
+- name: Install Kibana
+  hosts: all
+  become: yes
+  tags:
+    - kibana
+  tasks:
+    - name: Install Kibana packages
+      apt:
+        name: kibana
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      register: apt_result
+      until: apt_result is success
+      retries: 2
+
+    - name: Configuration
+      template:
+        src: j2/elastic/kibana.yml.j2
+        dest: /etc/kibana/kibana.yml
+
+    - name: Restart service
+      service:
+        name: kibana
+        state: restarted
+        enabled: yes
+
+# 只需要在一个服务器配置 kibana
+- name: Configuration Nginx
+  hosts: all
+  become: yes
+  tags:
+    - web
+  tasks:
+    - name: Configuration monitor nginx
+      template:
+        src: j2/elastic/web/kibana.conf.j2
+        dest: /etc/nginx/conf.d/kibana.conf
+
+    - name: Restart Nginx service
+      service:
+        name: nginx
+        state: restarted
 
 # TODO Filebeat

@@ -1,0 +1,17 @@
+# link: https://www.elastic.co/guide/en/kibana/7.17/settings.html
+elasticsearch:
+  hosts:
+    - http://localhost:9200
+  username: kibana_system
+  password: pass
+
+i18n:
+  locale: zh-CN
+
+kibana.index: ".kibana"
+
+server:
+  host: 0.0.0.0
+  port: 5601
+  cors:
+    allowOrigin: ["*"]
